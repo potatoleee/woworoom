@@ -131,13 +131,11 @@ orderPageContent.addEventListener("click",function(e){
     let id = e.target.dataset.id;
     if(targetClass == "js-orderStatus"){
         let status = e.target.dataset.status;
-   
         changeOrderStatus(status,id);
         return
     }
 
     if(targetClass == "delSingleOrder-Btn js-orderDelete"){
-        alert("你點到刪除按鈕囉");
         deleteOrderItem(id);
         return
     }
@@ -193,7 +191,7 @@ function deleteOrderItem(id){
 
 //刪除全部訂單
 const discardAllBtn = document.querySelector(".discardAllBtn");
-discardAllBtn.addEventListener("click",function(){
+discardAllBtn.addEventListener("click",function(e){
     e.preventDefault()
     axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/potato1204/orders`,{
         headers:{
@@ -206,3 +204,4 @@ discardAllBtn.addEventListener("click",function(){
     })
 
 })
+

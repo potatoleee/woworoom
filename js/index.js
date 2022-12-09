@@ -38,8 +38,8 @@ function renderProductList(data){
 <img src="${item.images}" alt="">
 <a href="#" class="addCardBtn" data-id="${item.id}" >加入購物車</a>
 <h3>${item.title}</h3>
-<del class="originPrice">NT$${item.origin_price}</del>
-<p class="nowPrice">NT$${item.price}</p>
+<del class="originPrice">NT$${toThousand(item.origin_price)}</del>
+<p class="nowPrice">NT$${toThousand(item.price)}</p>
 </li>
         `
         str += content;
@@ -119,7 +119,8 @@ function getCartList(){
         //購物車總金額
         // console.log(response.data.finalTotal)
         const shoppingCartTotal = document.querySelector(".shoppingCart-total");
-        shoppingCartTotal.textContent = `NT$${response.data.finalTotal}`;
+       
+        shoppingCartTotal.textContent = `NT$${toThousand(response.data.finalTotal)}`;
 
         cartData= response.data.carts; 
         console.log(cartData);
@@ -144,9 +145,9 @@ function renderCartList(cartData){
                     <p>${item.product.title}</p>
                 </div>
             </td>
-            <td>NT$${item.product.price}</td>
+            <td>NT$${toThousand(item.product.price)}</td>
             <td>${item.quantity}</td>
-            <td>NT$${item.product.price*item.quantity}</td>
+            <td>NT$${toThousand(item.product.price*item.quantity)}</td>
             <td class="discardBtn">
                 <a href="#" class="material-icons" data-id="${item.id}" >
                     clear
@@ -211,28 +212,59 @@ discardAllBtn.addEventListener("click",function(e){
 })
 
 //送出訂單
-const orderInfoBtn = document.querySelector(".orderInfo-btn");
+const orderInfoInput = document.querySelectorAll(".orderInfo-input");
+const orderInfoForm = document.querySelector(".orderInfo-form");
+// 取得所有帶有 data-msg 的 <p> 標籤
+const messages = document.querySelectorAll('[data-message]');
 
-orderInfoBtn.addEventListener("click",function(e){
-    e.preventDefault();
-    
-    //送出表單條件 1.詳填訂單資訊 2.購物車是否有品項
-    if( cartData.length == 0 ){
-        console.log("購物車沒有東西喔！");
-        return
-    }
-    
+// 綁定整個 form 表單，驗證成功才准許送出表單
+orderInfoForm.addEventListener("submit", verification, false);
+
+//驗證條件
+const constraints = {
+    "姓名": {
+      presence: {
+        message: "必填欄位"
+      }
+    },
+    "電話": {
+      presence: {
+        message: "必填欄位"
+      },
+      length: {
+        minimum: 8,
+        message: "需超過 8 碼"
+      }
+    },
+    "信箱": {
+      presence: {
+        message: "必填欄位"
+      },
+      email: {
+        message: "格式錯誤"
+      }
+    },
+    "寄送地址": {
+      presence: {
+        message: "必填欄位"
+      }
+    },
+    "交易方式": {
+      presence: {
+        message: "必填欄位"
+      }
+    },
+};
+
+//傳送表單
+function sendOrder(){
+
     const customerName = document.querySelector("#customerName").value;
     const customerPhone = document.querySelector("#customerPhone").value;
     const customerEmail = document.querySelector("#customerEmail").value;
     const customerAddress = document.querySelector("#customerAddress").value;
     const tradeWay = document.querySelector("#tradeWay").value;
     const orderInfoForm = document.querySelector(".orderInfo-form");
-
-    if(customerName=="" || customerPhone=="" || customerEmail=="" || customerAddress=="" || tradeWay=="" ){
-        alert("表單請填寫完整");
-        return
-    } 
 
     let data = {
         "data": {
@@ -259,8 +291,58 @@ orderInfoBtn.addEventListener("click",function(e){
         console.log(error);
       })
 
-   
-})
+
+}
+
+//驗證判斷
+function verification(e) {
+    e.preventDefault();
+    let errors = validate(orderInfoForm, constraints);
+    // 如果有誤，呈現錯誤訊息  
+    if (errors) {
+      showErrors(errors);
+    }else if( cartData.length == 0 ){
+        alert("購物車沒東西喔！");
+        return
+    }
+     else {
+      // 如果沒有錯誤，送出表單
+      sendOrder();
+      alert("成功送出表單")
+    }
+}  
+
+//錯誤訊息
+function showErrors(errors) {
+    messages.forEach((item) => {
+      item.textContent = "";
+      item.textContent = errors[item.dataset.msg];
+    })
+}
+
+// 監控所有 input 的操作
+orderInfoInput.forEach((item) => {
+    item.addEventListener("change", function(e) {
+      e.preventDefault();
+      let targetName = item.name;
+      let errors = validate(orderInfoForm, constraints);
+      item.nextElementSibling.textContent = "";
+      // 針對正在操作的欄位呈現警告訊息
+      if(errors){
+        document.querySelector(`[data-message='${targetName}']`).textContent = errors[targetName];
+      }
+    });
+});
+
+
 init();
+
+
+//千分位
+function toThousand(x) { 
+    var parts = x.toString().split("."); 
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); 
+    return parts.join("."); 
+}
 
 
