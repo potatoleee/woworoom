@@ -17,7 +17,7 @@ function getProductList(){
     .then(function (response) {
         productsData = response.data.products; 
         console.log(productsData);
-       renderProductList(productsData);
+        renderProductList(productsData);
        
    
       })
@@ -68,7 +68,7 @@ function selectFilter(e){
     }
 }
 
-//監聽購物車按鈕，監聽最外面ul效能比較好，而且ul永遠都存在比較好
+//加入購物車事件，監聽最外面ul效能比較好，而且ul永遠都存在比較好
 productWrap.addEventListener("click",function(e){
     e.preventDefault();
     // console.log(e.target);
@@ -78,8 +78,35 @@ productWrap.addEventListener("click",function(e){
         return
     }
     let productId = e.target.dataset.id;
-    // console.log(productId);
-    addCartItem(productId);
+    let numCheck = 1;
+
+    //判斷 購物車產品id 是否等於 我點擊的商品id
+    cartData.forEach(function(item){
+        if(item.product.id === productId ){
+            numCheck = item.quantity += 1;
+        }
+    })
+    // console.log(numCheck);
+
+    let data = {
+        "data": {
+          "productId": productId,
+          "quantity": numCheck
+        }
+    }
+      
+    axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`,data)
+    
+    .then(function (response) {
+        //console.log(response.data);
+        alert("加入購物車成功");
+       getCartList();//記得要再執行getCartList一次才會即時更新
+   
+      })
+      .catch(function (error) {
+        // handle error
+        console.log(error);
+      })
     
 })
 
@@ -88,7 +115,14 @@ function getCartList(){
     axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
     
     .then(function (response) {
+
+        //購物車總金額
+        // console.log(response.data.finalTotal)
+        const shoppingCartTotal = document.querySelector(".shoppingCart-total");
+        shoppingCartTotal.textContent = `NT$${response.data.finalTotal}`;
+
         cartData= response.data.carts; 
+        console.log(cartData);
         renderCartList(cartData);
    
       })
@@ -110,11 +144,11 @@ function renderCartList(cartData){
                     <p>${item.product.title}</p>
                 </div>
             </td>
-            <td>${item.product.price}</td>
-            <td>1</td>
-            <td>${item.product.price}</td>
+            <td>NT$${item.product.price}</td>
+            <td>${item.quantity}</td>
+            <td>NT$${item.product.price*item.quantity}</td>
             <td class="discardBtn">
-                <a href="#" class="material-icons">
+                <a href="#" class="material-icons" data-id="${item.id}" >
                     clear
                 </a>
             </td>
@@ -124,36 +158,109 @@ function renderCartList(cartData){
     shoppingCartTableList.innerHTML = str;
 }
 
+//篩選按鈕監聽事件
+productSelect.addEventListener("change",selectFilter);
 
-
-
-//加入購物車 
-function addCartItem(id){
-    let data = {
-        "data": {
-          "productId": id,
-          "quantity": 1
-        }
+//刪除單項購物車
+shoppingCartTableList.addEventListener("click",function(e){
+    e.preventDefault();
+    const cartId = e.target.dataset.id;
+    //判斷有無點到按鈕
+    if (cartId == null){
+        alert("你點到其他東西囉");
+        return;
     }
-      
+    console.log(cartId);
 
-    axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`,data)
+    //刪除api 開始
+    axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts/${cartId}`)
     
     .then(function (response) {
-        //console.log(response.data);
-       getCartList();//記得要再執行getCartList一次才會即時更新
+      console.log(response)
+      alert("刪除單筆購物車物品成功");
+      //再度取資料
+      getCartList();
    
       })
       .catch(function (error) {
         // handle error
         console.log(error);
       })
-}
 
-//篩選按鈕監聽事件
-productSelect.addEventListener("change",selectFilter);
+})
 
+//刪除全部購物車;
+const discardAllBtn = document.querySelector(".discardAllBtn");
+discardAllBtn.addEventListener("click",function(e){
+    e.preventDefault();
+    console.log(e.target);
+     //刪除api 開始
+     axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`)
+    
+     .then(function (response) {
+       console.log(response)
+       alert("刪除全部購物車物品成功");
+       //再度取資料
+       getCartList();
+    
+       })
+       .catch(function (error) {
+         console.log(error);
+        alert("購物車已經清空，請勿重複點擊～！")
+       })
+})
 
+//送出訂單
+const orderInfoBtn = document.querySelector(".orderInfo-btn");
+
+orderInfoBtn.addEventListener("click",function(e){
+    e.preventDefault();
+    
+    //送出表單條件 1.詳填訂單資訊 2.購物車是否有品項
+    if( cartData.length == 0 ){
+        console.log("購物車沒有東西喔！");
+        return
+    }
+    
+    const customerName = document.querySelector("#customerName").value;
+    const customerPhone = document.querySelector("#customerPhone").value;
+    const customerEmail = document.querySelector("#customerEmail").value;
+    const customerAddress = document.querySelector("#customerAddress").value;
+    const tradeWay = document.querySelector("#tradeWay").value;
+    const orderInfoForm = document.querySelector(".orderInfo-form");
+
+    if(customerName=="" || customerPhone=="" || customerEmail=="" || customerAddress=="" || tradeWay=="" ){
+        alert("表單請填寫完整");
+        return
+    } 
+
+    let data = {
+        "data": {
+            "user": {
+              "name": customerName,
+              "tel": customerPhone,
+              "email": customerEmail,
+              "address": customerAddress,
+              "payment": tradeWay
+            }
+          }
+    }
+    axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`,data)
+
+    .then(function (response) {
+        console.log(response);
+        //清空表單
+        orderInfoForm.reset();
+        getCartList();
+   
+      })
+      .catch(function (error) {
+        // handle error
+        console.log(error);
+      })
+
+   
+})
 init();
 
 
