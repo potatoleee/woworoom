@@ -316,7 +316,7 @@ function verification(e) {
 function showErrors(errors) {
     messages.forEach((item) => {
       item.textContent = "";
-      item.textContent = errors[item.dataset.msg];
+      item.textContent = errors[item.dataset.message];
     })
 }
 

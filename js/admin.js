@@ -63,7 +63,7 @@ function getOrderList(){
 
     .then(function (response) {
         orderData = response.data.orders;
-        console.log(orderData);
+        // console.log(orderData);
       
         let str = "";
         orderData.forEach(function(item){
@@ -146,10 +146,10 @@ orderPageContent.addEventListener("click",function(e){
 function changeOrderStatus(status,id){
     //點擊後的狀態判斷
     let newStatus;
-    if(status == true){
-        newStatus =false;
+    if(status === "true"){
+        newStatus = false;
     }else{
-        newStatus =true;
+        newStatus = true;
     }
 
     let data ={
